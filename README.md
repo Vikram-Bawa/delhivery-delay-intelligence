@@ -13,15 +13,15 @@ Delhivery operations.
 
 ### Requirements
 
--   Python 3.10 or later
--   A virtual environment
--   Packages listed in `requirements.txt`
+- Python 3.10 or later
+- A virtual environment
+- Packages listed in `requirements.txt`
 
 ### Windows PowerShell setup
 
 Run these commands from the project root:
 
-``` powershell
+```powershell
 cd C:\Users\vsbaw\delhivery-delay-intelligence
 
 python -m venv .venv
@@ -33,7 +33,7 @@ pip install -r requirements.txt
 
 If PowerShell blocks virtual-environment activation, use:
 
-``` powershell
+```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
@@ -44,7 +44,7 @@ Run the scripts in the following order. Each script reads inputs from
 `data/` and writes its results to the relevant `outputs/` or `models/`
 folder.
 
-``` powershell
+```powershell
 python generate_data.py
 python part_a_clean_eda.py
 python part_b_regression.py
@@ -55,7 +55,7 @@ python predict_delay.py
 ```
 
 `generate_data.py` creates the synthetic source data. Run it first when
-rebuilding the project from scratch. Parts A--D perform cleaning/EDA,
+rebuilding the project from scratch. Parts A–D perform cleaning/EDA,
 delivery-time regression, delay classification, and hub segmentation.
 `package_model.py` fits and saves the final classification pipeline and
 its supporting metadata. `predict_delay.py` scores the supplied
@@ -63,35 +63,18 @@ new-shipment batch and writes recommended actions.
 
 ### Important input and output files
 
-  ---------------------------------------------------------------------
-  Path                               Purpose
-  ---------------------------------- ----------------------------------
-  `data/raw_shipments.csv`           Historical synthetic shipment
-                                     records
-
-  `data/hubs.csv`                    Hub metadata
-
-  `data/new_shipments.csv`           New shipment batch for scoring
-
-  `data/modelling_table.csv`         Cleaned feature table used by
-                                     modelling
-
-  `src/shipment_prep.py`             Shared cleaning and
-                                     feature-engineering logic
-
-  `outputs/`                         EDA, evaluation, segmentation and
-                                     scoring outputs
-
-  `models/delay_model.pkl`           Saved delay-classification
-                                     pipeline
-
-  `models/delay_threshold.csv`       Selected alert probability
-                                     threshold
-
-  `models/feature_order.csv`         Required model feature order
-
-  `models/impute_values.csv`         Historical imputation medians
-  ---------------------------------------------------------------------
+| Path                         | Purpose                                           |
+|:-----------------------------|:--------------------------------------------------|
+| `data/raw_shipments.csv`     | Historical synthetic shipment records             |
+| `data/hubs.csv`              | Hub metadata                                      |
+| `data/new_shipments.csv`     | New shipment batch for scoring                    |
+| `data/modelling_table.csv`   | Cleaned feature table used by modelling           |
+| `src/shipment_prep.py`       | Shared cleaning and feature-engineering logic     |
+| `outputs/`                   | EDA, evaluation, segmentation and scoring outputs |
+| `models/delay_model.pkl`     | Saved delay-classification pipeline               |
+| `models/delay_threshold.csv` | Selected alert probability threshold              |
+| `models/feature_order.csv`   | Required model feature order                      |
+| `models/impute_values.csv`   | Historical imputation medians                     |
 
 The scoring stage depends on the model artefacts, feature order,
 historical imputation values and hub segment assignments created by the
@@ -138,9 +121,9 @@ The data is synthetic.
     `log_declared_value` is far more symmetric and no longer dominated
     by a few extreme values.
 
-## 3. Model results 
+## 3. Model results
 
-### regression
+### Regression
 
 All numbers below are copied from `part_b_metrics.csv`,
 `part_b_tree_depth.csv`, `part_b_gb_learning_rate.csv` and
@@ -149,46 +132,44 @@ training, 180 validation and 180 test rows, and the scaler was fitted on
 the training rows only (`part_b_checks.csv`: `train_scaled_max_abs_mean`
 is about 4e-16, `test_scaled_max_abs_mean` is 0.2187).
 
--   **Baseline.** Always predicting the training mean gives a validation
-    R² of -0.0212 (RMSE 18.8552 hours). An R² near zero means the
-    baseline explains none of the variation in delivery hours, so any
-    real model must beat this number.
+- **Baseline.** Always predicting the training mean gives a validation
+  R² of -0.0212 (RMSE 18.8552 hours). An R² near zero means the baseline
+  explains none of the variation in delivery hours, so any real model
+  must beat this number.
 
--   **Winner on validation.** Linear regression has the lowest
-    validation RMSE, 4.8912 hours (R² 0.9313). Gradient boosting is very
-    close at 4.9165 hours (R² 0.9306), then random forest at 5.4680 and
-    the decision tree at 6.2796.
+- **Winner on validation.** Linear regression has the lowest validation
+  RMSE, 4.8912 hours (R² 0.9313). Gradient boosting is very close at
+  4.9165 hours (R² 0.9306), then random forest at 5.4680 and the
+  decision tree at 6.2796.
 
--   **Bias and variance by tree depth.** Depth 1 is high-bias: train
-    RMSE 11.6334 and validation RMSE 12.1324 are both high, with a gap
-    of only 0.4990. Depth 2 (10.4114 validation) is also still
-    underfitting. At the other end, the unlimited tree is high-variance:
-    train RMSE 0.0000 against validation RMSE 7.7890, a gap of 7.7890
-    hours, and depth 12 shows the same pattern (gap 6.0560). The sweet
-    spot is depth 6, with validation RMSE 6.2796.
+- **Bias and variance by tree depth.** Depth 1 is high-bias: train RMSE
+  11.6334 and validation RMSE 12.1324 are both high, with a gap of only
+  0.4990. Depth 2 (10.4114 validation) is also still underfitting. At
+  the other end, the unlimited tree is high-variance: train RMSE 0.0000
+  against validation RMSE 7.7890, a gap of 7.7890 hours, and depth 12
+  shows the same pattern (gap 6.0560). The sweet spot is depth 6, with
+  validation RMSE 6.2796.
 
--   **Learning rate.** Of 0.01, 0.1 and 1.0, a rate of 0.1 is best
-    (validation R² 0.9306). At 0.01 the model is too slow: 100 trees
-    take steps that are too small to fit the pattern, leaving R² at
-    0.7127. At 1.0 each step overshoots and the model is unstable,
-    giving R² 0.8440.
+- **Learning rate.** Of 0.01, 0.1 and 1.0, a rate of 0.1 is best
+  (validation R² 0.9306). At 0.01 the model is too slow: 100 trees take
+  steps that are too small to fit the pattern, leaving R² at 0.7127. At
+  1.0 each step overshoots and the model is unstable, giving R² 0.8440.
 
--   **Cross-validation disagrees with validation.** On the 1,020
-    training-plus-validation rows (5 folds, one shared `KFold`),
-    gradient boosting has a mean R² of 0.9352 (std 0.0044) and linear
-    regression 0.9261 (std 0.0048). The single 180-row validation set
-    put linear regression ahead by only 0.0253 hours of RMSE.
+- **Cross-validation disagrees with validation.** On the 1,020
+  training-plus-validation rows (5 folds, one shared `KFold`), gradient
+  boosting has a mean R² of 0.9352 (std 0.0044) and linear regression
+  0.9261 (std 0.0048). The single 180-row validation set put linear
+  regression ahead by only 0.0253 hours of RMSE.
 
--   **Final model and what I would ship.** By the stated rule the final
-    model is linear regression, and on the test rows it scores RMSE
-    4.5235 hours and R² 0.9493 (scored once). If it were my choice I
-    would ship gradient boosting: cross-validation uses far more data
-    than one 180-row split, so it is a steadier guide, and boosting can
-    capture interactions that a linear model cannot. The gap between the
-    two is small, so linear regression is an acceptable simpler
-    fallback.
+- **Final model and what I would ship.** By the stated rule the final
+  model is linear regression, and on the test rows it scores RMSE 4.5235
+  hours and R² 0.9493 (scored once). If it were my choice I would ship
+  gradient boosting: cross-validation uses far more data than one
+  180-row split, so it is a steadier guide, and boosting can capture
+  interactions that a linear model cannot. The gap between the two is
+  small, so linear regression is an acceptable simpler fallback.
 
-### classification
+### Classification
 
 All numbers below are copied from the seven CSV files written by
 `part_c_classification.py`. The classification task predicts whether a
@@ -206,23 +187,12 @@ on-time. However, it detected none of the delayed shipments, giving it
 zero recall and zero F1. Therefore, accuracy alone is not a reliable
 measure of usefulness for this delay-detection problem.
 
-  ---------------------------------------------------------------------------------
-  Model            TN     FP     FN     TP   Accuracy   Precision   Recall       F1
-  ------------ ------ ------ ------ ------ ---------- ----------- -------- --------
-  Blind           138      0     42      0     0.7667      0.0000   0.0000   0.0000
-  baseline                                                                 
-
-  Logistic        128     10      7     35     0.9056      0.7778   0.8333   0.8046
-  Regression                                                               
-
-  Decision        128     10     11     31     0.8833      0.7561   0.7381   0.7470
-  Tree (depth                                                              
-  6)                                                                       
-
-  Default         132      6     11     31     0.9056      0.8378   0.7381   0.7848
-  Random                                                                   
-  Forest                                                                   
-  ---------------------------------------------------------------------------------
+| Model                   |  TN |  FP |  FN |  TP | Accuracy | Precision | Recall |     F1 |
+|:------------------------|----:|----:|----:|----:|---------:|----------:|-------:|-------:|
+| Blind baseline          | 138 |   0 |  42 |   0 |   0.7667 |    0.0000 | 0.0000 | 0.0000 |
+| Logistic Regression     | 128 |  10 |   7 |  35 |   0.9056 |    0.7778 | 0.8333 | 0.8046 |
+| Decision Tree (depth 6) | 128 |  10 |  11 |  31 |   0.8833 |    0.7561 | 0.7381 | 0.7470 |
+| Default Random Forest   | 132 |   6 |  11 |  31 |   0.9056 |    0.8378 | 0.7381 | 0.7848 |
 
 ### Feature importance and process noise
 
@@ -239,13 +209,13 @@ The seven highest-ranked features according to ANOVA F-scores were:
 All five process-noise features ranked outside the top seven. Their
 combined Random Forest importance share was 0.2244 (22.44%).
 
-  Noise feature            F-score   F-rank   Random Forest importance
-  ---------------------- --------- -------- --------------------------
-  `label_print_batch`       4.5847        8                     0.0460
-  `tape_roll_no`            1.9052       12                     0.0476
-  `sticker_serial_mod`      1.2776       14                     0.0499
-  `shelf_slot_no`           0.1393       16                     0.0436
-  `scanner_build_no`        0.0230       17                     0.0374
+| Noise feature        | F-score | F-rank | Random Forest importance |
+|:---------------------|--------:|-------:|-------------------------:|
+| `label_print_batch`  |  4.5847 |      8 |                   0.0460 |
+| `tape_roll_no`       |  1.9052 |     12 |                   0.0476 |
+| `sticker_serial_mod` |  1.2776 |     14 |                   0.0499 |
+| `shelf_slot_no`      |  0.1393 |     16 |                   0.0436 |
+| `scanner_build_no`   |  0.0230 |     17 |                   0.0374 |
 
 This indicates that the five process-noise columns collectively
 contribute some Random Forest importance, but none ranks among the seven
@@ -253,13 +223,13 @@ strongest features according to the ANOVA F-score ranking.
 
 ### Feature selection experiments
 
-    Number of selected features (k)   Validation F1
-  --------------------------------- ---------------
-                                  5          0.6988
-                                  7          0.8333
-                                 10          0.7857
-                                 12          0.8049
-                                 17          0.7848
+| Number of selected features (k) | Validation F1 |
+|--------------------------------:|--------------:|
+|                               5 |        0.6988 |
+|                               7 |        0.8333 |
+|                              10 |        0.7857 |
+|                              12 |        0.8049 |
+|                              17 |        0.7848 |
 
 Selecting seven features produced the highest validation F1.
 
@@ -274,20 +244,11 @@ than Randomized Search (0.8905). However, neither tuned candidate
 outperformed the default Random Forest using the same seven selected
 features on the validation set.
 
-  --------------------------------------------------------------------------
-  Candidate      Candidates    CV folds  Total fits     Best CV   Validation
-                                                       accuracy           F1
-  ------------ ------------ ----------- ----------- ----------- ------------
-  Grid Search            27           5         135      0.8952       0.7750
-
-  Randomized              9           5          45      0.8905       0.7848
-  Search                                                        
-
-  Default                 1           0           1         ---       0.8333
-  forest, same                                                  
-  seven                                                         
-  features                                                      
-  --------------------------------------------------------------------------
+| Candidate                           | Candidates | CV folds | Total fits | Best CV accuracy | Validation F1 |
+|:------------------------------------|-----------:|---------:|-----------:|-----------------:|--------------:|
+| Grid Search                         |         27 |        5 |        135 |           0.8952 |        0.7750 |
+| Randomized Search                   |          9 |        5 |         45 |           0.8905 |        0.7848 |
+| Default forest, same seven features |          1 |        0 |          1 |                — |        0.8333 |
 
 The default forest was therefore selected according to the required
 validation F1 comparison.
@@ -300,9 +261,9 @@ probability threshold that maintained validation recall of at least
 
 The selected threshold was 0.5, giving:
 
--   Validation precision: 0.7955
--   Validation recall: 0.8333
--   Validation F1: 0.8140
+- Validation precision: 0.7955
+- Validation recall: 0.8333
+- Validation F1: 0.8140
 
 This threshold provides a balance between identifying delayed shipments
 and limiting false alerts while satisfying the required recall
@@ -313,12 +274,12 @@ constraint.
 The final model was evaluated once on the untouched test set using the
 selected threshold of 0.5.
 
-  Metric        Test result
-  ----------- -------------
-  Accuracy           0.8667
-  Precision          0.6889
-  Recall             0.7561
-  F1                 0.7209
+| Metric    | Test result |
+|:----------|------------:|
+| Accuracy  |      0.8667 |
+| Precision |      0.6889 |
+| Recall    |      0.7561 |
+| F1        |      0.7209 |
 
 Test recall was lower than validation recall (0.7561 compared with
 0.8333). This difference is reported transparently rather than hidden.
@@ -327,14 +288,14 @@ particularly sensitive to individual classification errors.
 
 ### Final classification configuration
 
--   Feature selector: `SelectKBest`
--   Number of selected features: 7
--   Classifier: Random Forest
--   Number of estimators: 100
--   Maximum depth: Unlimited
--   Minimum samples per leaf: 1
--   Alert threshold: 0.5
--   Selected candidate: `default_forest_same_7_features`
+- Feature selector: `SelectKBest`
+- Number of selected features: 7
+- Classifier: Random Forest
+- Number of estimators: 100
+- Maximum depth: Unlimited
+- Minimum samples per leaf: 1
+- Alert threshold: 0.5
+- Selected candidate: `default_forest_same_7_features`
 
 ## 4. Operations recommendation
 
@@ -350,12 +311,12 @@ KMeans was evaluated for K = 2, 3, 4 and 5 using `random_state=42` and
 hub pairs in different clusters divided by the mean Euclidean distance
 between hub pairs in the same cluster.
 
-    K   Separation ratio
-  --- ------------------
-    2             2.8940
-    3             5.3928
-    4             6.3047
-    5             6.8866
+|   K | Separation ratio |
+|----:|-----------------:|
+|   2 |           2.8940 |
+|   3 |           5.3928 |
+|   4 |           6.3047 |
+|   5 |           6.8866 |
 
 Although K=4 and K=5 have higher separation ratios, K=3 was retained for
 the final business segmentation. The larger K values create small
@@ -363,7 +324,7 @@ clusters: K=4 includes clusters of four and five hubs, while K=5
 includes clusters of two, three and four hubs. Such small groups are
 less suitable for reliable, independently managed operational playbooks.
 K=3 provides a more practical balance between separation and operational
-group size, with 7--9 hubs in each segment.
+group size, with 7–9 hubs in each segment.
 
 ### Final segment profile
 
@@ -371,17 +332,11 @@ The final cluster names were assigned by ordering the three clusters by
 their mean delay rate: lowest as `Standard`, middle as `Watch`, and
 highest as `Escalate`.
 
-  ----------------------------------------------------------------------
-  Segment           Hubs        Mean  Delay rate        Mean  Mean stops
-                            delivery                distance 
-                               hours                    (km) 
-  ---------- ----------- ----------- ----------- ----------- -----------
-  Standard             7     47.2396      0.0257    188.9296     55.3686
-
-  Watch                8     56.8137      0.1550    314.1762     70.7175
-
-  Escalate             9     64.6504      0.4600    470.4757     84.3444
-  ----------------------------------------------------------------------
+| Segment  | Hubs | Mean delivery hours | Delay rate | Mean distance (km) | Mean stops |
+|:---------|-----:|--------------------:|-----------:|-------------------:|-----------:|
+| Standard |    7 |             47.2396 |     0.0257 |           188.9296 |    55.3686 |
+| Watch    |    8 |             56.8137 |     0.1550 |           314.1762 |    70.7175 |
+| Escalate |    9 |             64.6504 |     0.4600 |           470.4757 |    84.3444 |
 
 The segment profiles show a clear operational gradient. Standard hubs
 have the lowest average delay rate and shorter average distances. Watch
@@ -390,37 +345,23 @@ rate, longest average distance and highest average number of stops.
 
 ### Hub membership
 
-  ---------------------------------------------------------------------
-  Segment                            Hub IDs and cities
-  ---------------------------------- ----------------------------------
-  Standard                           HUB01 Mumbai; HUB02 Delhi; HUB03
-                                     Bengaluru; HUB04 Hyderabad; HUB05
-                                     Chennai; HUB06 Pune; HUB08
-                                     Ahmedabad
-
-  Watch                              HUB07 Kolkata; HUB09 Jaipur; HUB10
-                                     Lucknow; HUB11 Chandigarh; HUB12
-                                     Indore; HUB14 Coimbatore; HUB16
-                                     Surat; HUB22 Dehradun
-
-  Escalate                           HUB13 Nagpur; HUB15 Kochi; HUB17
-                                     Patna; HUB18 Ranchi; HUB19
-                                     Guwahati; HUB20 Raipur; HUB21
-                                     Bhubaneswar; HUB23 Siliguri; HUB24
-                                     Agartala
-  ---------------------------------------------------------------------
+| Segment  | Hub IDs and cities                                                                                                                    |
+|:---------|:--------------------------------------------------------------------------------------------------------------------------------------|
+| Standard | HUB01 Mumbai; HUB02 Delhi; HUB03 Bengaluru; HUB04 Hyderabad; HUB05 Chennai; HUB06 Pune; HUB08 Ahmedabad                               |
+| Watch    | HUB07 Kolkata; HUB09 Jaipur; HUB10 Lucknow; HUB11 Chandigarh; HUB12 Indore; HUB14 Coimbatore; HUB16 Surat; HUB22 Dehradun             |
+| Escalate | HUB13 Nagpur; HUB15 Kochi; HUB17 Patna; HUB18 Ranchi; HUB19 Guwahati; HUB20 Raipur; HUB21 Bhubaneswar; HUB23 Siliguri; HUB24 Agartala |
 
 ### Tier-versus-segment mismatches
 
 Four hubs have a segment label that differs from the simple expectation
 implied by their hub tier:
 
-  Hub     City         Tier Segment
-  ------- ---------- ------ ----------
-  HUB07   Kolkata         1 Watch
-  HUB13   Nagpur          2 Escalate
-  HUB15   Kochi           2 Escalate
-  HUB22   Dehradun        3 Watch
+| Hub   | City     | Tier | Segment  |
+|:------|:---------|-----:|:---------|
+| HUB07 | Kolkata  |    1 | Watch    |
+| HUB13 | Nagpur   |    2 | Escalate |
+| HUB15 | Kochi    |    2 | Escalate |
+| HUB22 | Dehradun |    3 | Watch    |
 
 These mismatches are useful review candidates rather than errors to be
 automatically corrected. Tier is a pre-existing hub category, whereas
@@ -430,22 +371,22 @@ observed performance differs from the tier-level expectation.
 
 ### Recommended operating playbooks
 
--   **Standard:** Maintain current operating practices, continue routine
-    monitoring, and use these hubs as the comparison group when
-    reviewing changes.
--   **Watch:** Review lane distance, stop counts, capacity and recent
-    delay patterns. Use proactive customer communication when the
-    shipment-level model flags a shipment.
--   **Escalate:** Prioritise hub-manager review, investigate recurring
-    long-distance and high-stop routes, and examine capacity or process
-    constraints. Shipment-level flagged records in this segment receive
-    the action `Escalate to hub manager`.
+- **Standard:** Maintain current operating practices, continue routine
+  monitoring, and use these hubs as the comparison group when reviewing
+  changes.
+- **Watch:** Review lane distance, stop counts, capacity and recent
+  delay patterns. Use proactive customer communication when the
+  shipment-level model flags a shipment.
+- **Escalate:** Prioritise hub-manager review, investigate recurring
+  long-distance and high-stop routes, and examine capacity or process
+  constraints. Shipment-level flagged records in this segment receive
+  the action `Escalate to hub manager`.
 
 These recommendations are proposed actions based on the segment
 profiles; they are not claims that an intervention has already improved
 delivery performance.
 
-## 5. Production plan 
+## 5. Production plan
 
 ### Model packaging and reproducibility
 
@@ -453,15 +394,15 @@ delivery performance.
 specified stratified 840/180/180 split and fits the model on the 840
 training rows. It saves:
 
--   `models/delay_model.pkl` --- the fitted `SelectKBest` plus Random
-    Forest pipeline.
--   `models/delay_threshold.csv` --- the selected probability threshold
-    (0.5).
--   `models/feature_order.csv` --- the ordered list of 17 input features
-    expected by the pipeline.
--   `models/impute_values.csv` --- historical imputation medians used
-    during preprocessing.
--   `outputs/part_d_reload_check.csv` --- reload verification output.
+- `models/delay_model.pkl` — the fitted `SelectKBest` plus Random Forest
+  pipeline.
+- `models/delay_threshold.csv` — the selected probability threshold
+  (0.5).
+- `models/feature_order.csv` — the ordered list of 17 input features
+  expected by the pipeline.
+- `models/impute_values.csv` — historical imputation medians used during
+  preprocessing.
+- `outputs/part_d_reload_check.csv` — reload verification output.
 
 The saved historical medians are 314.95 km for distance, 1.83 kg for
 parcel weight and INR 1,121.50 for declared value. They are reused when
@@ -483,16 +424,11 @@ the saved 17-feature order.
 A shipment is flagged when its predicted delay probability is greater
 than or equal to 0.5. The action mapping is:
 
-  ---------------------------------------------------------------------
-  Prediction and hub segment         Recommended action
-  ---------------------------------- ----------------------------------
-  Flagged and segment is `Escalate`  `Escalate to hub manager`
-
-  Flagged and segment is `Watch` or  `Proactive customer call`
-  `Standard`                         
-
-  Not flagged                        `No action`
-  ---------------------------------------------------------------------
+| Prediction and hub segment                   | Recommended action        |
+|:---------------------------------------------|:--------------------------|
+| Flagged and segment is `Escalate`            | `Escalate to hub manager` |
+| Flagged and segment is `Watch` or `Standard` | `Proactive customer call` |
+| Not flagged                                  | `No action`               |
 
 The verified scoring run produced 48 output rows: 8 flagged and 40
 unflagged. The resulting actions were 6 hub-manager escalations, 2
@@ -509,14 +445,14 @@ columns in this order:
 
 ### Performance summary
 
-  Task                       Final test metric           Result
-  -------------------------- ------------------- --------------
-  Delivery-time regression   RMSE                  4.5235 hours
-  Delivery-time regression   R²                          0.9493
-  Delay classification       Accuracy                    0.8667
-  Delay classification       Precision                   0.6889
-  Delay classification       Recall                      0.7561
-  Delay classification       F1                          0.7209
+| Task                     | Final test metric |       Result |
+|:-------------------------|:------------------|-------------:|
+| Delivery-time regression | RMSE              | 4.5235 hours |
+| Delivery-time regression | R²                |       0.9493 |
+| Delay classification     | Accuracy          |       0.8667 |
+| Delay classification     | Precision         |       0.6889 |
+| Delay classification     | Recall            |       0.7561 |
+| Delay classification     | F1                |       0.7209 |
 
 The classification test set contains 180 shipments, including only 41
 delayed shipments. Test recall is lower than validation recall, so the
@@ -560,35 +496,35 @@ validated by this synthetic project.
     predictions and actions, and retain a rollback copy of the previous
     approved model.
 
-## 6. Limitations 
+## 6. Limitations
 
--   **Synthetic data:** The dataset is synthetic. It cannot establish
-    real Delhivery performance, causal relationships or expected
-    business savings.
--   **Limited sample size:** The historical dataset contains 1,200
-    shipments and 24 hubs. The new scoring batch contains 48 shipments.
-    These samples are too small to establish robust performance across
-    all routes, seasons and operating conditions.
--   **Test uncertainty:** Only 41 delayed shipments occur in the
-    classification test set. A small number of changed predictions can
-    materially change recall and precision.
--   **Validation-to-test difference:** Classification recall decreased
-    from 0.8333 on validation to 0.7561 on test. This gap should be
-    monitored rather than concealed.
--   **Probability calibration:** The model's predicted probabilities
-    have not been demonstrated to be calibrated. The 0.5 threshold is
-    the selected operating threshold from the project experiment, not a
-    universal risk boundary.
--   **Limited live context:** The current feature set does not represent
-    all possible real-time factors, such as live traffic, changing
-    weather severity, route disruptions, real-time hub workload or
-    dynamic vehicle availability.
--   **Static hub segments:** Hub segments are based on aggregate
-    historical profiles. They may change as operational conditions
-    change and should be recalculated only through a controlled review.
--   **No live intervention evaluation:** The recommended actions are
-    rule-based outputs. This project has not measured whether customer
-    calls or hub-manager escalations reduce delays.
+- **Synthetic data:** The dataset is synthetic. It cannot establish real
+  Delhivery performance, causal relationships or expected business
+  savings.
+- **Limited sample size:** The historical dataset contains 1,200
+  shipments and 24 hubs. The new scoring batch contains 48 shipments.
+  These samples are too small to establish robust performance across all
+  routes, seasons and operating conditions.
+- **Test uncertainty:** Only 41 delayed shipments occur in the
+  classification test set. A small number of changed predictions can
+  materially change recall and precision.
+- **Validation-to-test difference:** Classification recall decreased
+  from 0.8333 on validation to 0.7561 on test. This gap should be
+  monitored rather than concealed.
+- **Probability calibration:** The model’s predicted probabilities have
+  not been demonstrated to be calibrated. The 0.5 threshold is the
+  selected operating threshold from the project experiment, not a
+  universal risk boundary.
+- **Limited live context:** The current feature set does not represent
+  all possible real-time factors, such as live traffic, changing weather
+  severity, route disruptions, real-time hub workload or dynamic vehicle
+  availability.
+- **Static hub segments:** Hub segments are based on aggregate
+  historical profiles. They may change as operational conditions change
+  and should be recalculated only through a controlled review.
+- **No live intervention evaluation:** The recommended actions are
+  rule-based outputs. This project has not measured whether customer
+  calls or hub-manager escalations reduce delays.
 
 A production pilot should therefore begin in monitoring or
 decision-support mode, with human review of escalations. Broader
